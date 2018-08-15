@@ -1,0 +1,61 @@
+version: '3'
+
+services: 
+  proxy:
+    image: jwilder/nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+
+  server:
+    build:
+      context: ./server/
+    expose: 
+      - 3000
+      - 9615
+    ports:
+      - 3000:3000
+      - 80:8080
+    volumes:
+      - .:/app
+    environment:
+      VIRTUAL_HOST: srv.messagequeue.test
+      VIRTUAL_PORT: 3000
+      WAIT_HOSTS: rabbit:15672
+      RABBITMQ_HOST: rabbit
+      NODE_PORT: 3000
+  
+  client:
+    build:
+      context: ./client/
+    expose: 
+      - 3000
+      - 9615
+    ports:
+      - 3000:3001
+      - 80:8081
+    volumes:
+      - .:/app
+    environment:
+      VIRTUAL_HOST: client.messagequeue.test
+      VIRTUAL_PORT: 3000
+      WAIT_HOSTS: rabbit:15672
+      RABBITMQ_HOST: rabbit
+      NODE_PORT: 3000
+
+  rabbit:
+    image: rabbitmq:3-management-alpine
+    expose:
+      - 15672
+      - 25672
+      - 5672
+    ports:
+      - 15672:15672
+    environment:
+      VIRTUAL_HOST: rabbit.messagequeue.test
+      VIRTUAL_PORT: 15672
+      RABBITMQ_ERLANG_COOKIE: CE2AxkQlZTjOLDXhULC8dpcK7aBevrRRxSQKMCgolNEx2Ee7wJak2jlflIE7W4b2uFXkvL3KdWQm63j9V0T5iCTAVii3dtG57lzoJFogyrtgMxbVs9c5SpQerY19lwdM
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: pass
+      CLUSTERED: 'true'
